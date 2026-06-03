@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora Caderno Real - Versão Final</title>
+    <style>
+        :root {
+            --bg-color: #0f0f11;
+            --card-bg: #18181c;
+            --box-bg: #202024;
+            --text-main: #e1e1e6;
+            --text-muted: #a8a8b3;
+            --accent: #90caf9;
+            --border: #29292e;
+            --red-notebook: #f75a5a;
+            --green-notebook: #5af7a0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 750px;
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+            border: 1px solid var(--border);
+            margin-top: 20px;
+        }
+
+        h1 {
+            color: var(--accent);
+            text-align: center;
+            font-size: 1.6rem;
+            margin-bottom: 5px;
+            font-family: sans-serif;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 25px;
+            font-family: sans-serif;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        input, select, button {
+            padding: 14px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--box-bg);
+            color: white;
+            font-size: 1.1rem;
+            outline: none;
+        }
+
+        input {
+            flex: 1;
+            text-align: center;
+        }
+
+        select {
+            width: 80px;
+            text-align: center;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        button {
+            background: var(--box-bg);
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            cursor: pointer;
+            font-weight: bold;
+            font-family: sans-serif;
+            transition: background 0.2s, color 0.2s;
+        }
+
+        button:hover {
+            background: var(--accent);
+            color: var(--bg-color);
+        }
+
+        .output-area {
+            margin-top: 30px;
+            display: none;
+        }
+
+        .step-block {
+            background: #121214;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 25px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .step-title {
+            color: var(--accent);
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 5px;
+            width: 100%;
+            text-align: left;
+        }
+
+        .math-table {
+            border-collapse: collapse;
+            margin: 15px auto;
+            font-size: 1.4rem;
+        }
+
+        .math-table td {
+            width: 32px;
+            height: 35px;
+            text-align: center;
+            vertical-align: middle;
+            padding: 2px;
+            position: relative;
+        }
+
+        .line-below {
+            border-bottom: 3px solid var(--text-main);
+        }
+
+        .carry-row {
+            font-size: 1rem;
+            color: var(--accent);
+            height: 25px !important;
+        }
+
+        .borrowed {
+            text-decoration: line-through;
+            color: var(--red-notebook);
+        }
+
+        .new-value {
+            font-size: 0.85rem;
+            color: var(--green-notebook);
+            position: absolute;
+            top: -2px;
+            right: -2px;
+        }
+
+        .notebook-view {
+            font-size: 1.4rem;
+            line-height: 1.5;
+            white-space: pre;
+            background: #121214;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            display: inline-block;
+            text-align: left;
+            width: 100%;
+            max-width: 100%;
+        }
+
+        .explanation-text {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            line-height: 1.6;
+            margin-top: 15px;
+            font-family: sans-serif;
+            width: 100%;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Calculadora Caderno Real</h1>
+        <p class="subtitle">Processamento visual interativo construído do zero absoluto</p>
+        
+        <div class="input-row">
+            <input type="number" id="num1" placeholder="Ex: 58" value="58">
+            <select id="op">
+                <option value="+">+</option>
+                <option value="-">-</option>
+                <option value="*">×</option>
+                <option value="/">÷</option>
+            </select>
+            <input type="number" id="num2" placeholder="Ex: 27" value="27">
+        </div>
+        
+        <button style="width: 100%;" onclick="gerarCalculo()">Desmembrar Conta</button>
+
+        <div class="output-area" id="outputArea">
+            <div id="stepsContainer"></div>
+        </div>
+    </div>
+
+    <script>
+        function gerarCalculo() {
+            const val1 = document.getElementById('num1').value.trim();
+            const val2 = document.getElementById('num2').value.trim();
+            const op = document.getElementById('op').value;
+            const container = document.getElementById('stepsContainer');
+            const outputArea = document.getElementById('outputArea');
+
+            if (!val1 || !val2) {
+                alert("Por favor, insira os valores.");
+                return;
+            }
+
+            const n1 = parseFloat(val1);
+            const n2 = parseFloat(val2);
+
+            if (isNaN(n1) || isNaN(n2) || n1 < 0 || n2 < 0) {
+                alert("Por favor, digite números inteiros e positivos.");
+                return;
+            }
+
+            container.innerHTML = "";
+            outputArea.style.display = "block";
+
+            if (op === "+") {
+                gerarAdicaoDoZero(parseInt(val1), parseInt(val2), container);
+            } else if (op === "-") {
+                gerarSubtracaoCompleta(parseInt(val1), parseInt(val2), container);
+            } else if (op === "*") {
+                gerarMultiplicacaoCompleta(parseInt(val1), parseInt(val2), container);
+            } else if (op === "/") {
+                gerarDivisaoCadernoDoZero(n1, n2, container);
+            }
+        }
+
+        function criarBloco(titulo, htmlConteudo, explicacao) {
+            return `
+                <div class="step-block">
+                    <div class="step-title">${titulo}</div>
+                    ${htmlConteudo}
+                    <div class="explanation-text">${explicacao}</div>
+                </div>
+            `;
+        }
+
+        function gerarAdicaoDoZero(n1, n2, target) {
+            let s1 = n1.toString();
+            let s2 = n2.toString();
+            let len = Math.max(s1.length, s2.length);
+            
+            let arr1 = s1.padStart(len, '0').split('').map(Number);
+            let arr2 = s2.padStart(len, '0').split('').map(Number);
+            
+            // Passo Inicial: Limpo absoluto
+            let htmlInicial = `<table class="math-table">
+                <tr class="carry-row">${'<td></td>'.repeat(len + 1)}</tr>
+                <tr><td></td>${arr1.map(d => `<td>${d}</td>`).join('')}</tr>
+                <tr class="line-below"><td>+</td>${arr2.map(d => `<td>${d}</td>`).join('')}</tr>
+                <tr>${'<td></td>'.repeat(len + 1)}</tr>
+            </table>`;
+            target.innerHTML += criarBloco("Armando a Conta (Do Zero)", htmlInicial, "A conta está montada no caderno. Vamos iniciar somando a coluna da direita.");
+
+            let vaiUm = 0;
+            let visualVais = Array(len + 1).fill('');
+            let visualResultado = Array(len).fill('');
+
+            for (let i = len - 1; i >= 0; i--) {
+                let d1 = arr1[i];
+                let d2 = arr2[i];
+                let soma = d1 + d2 + vaiUm;
+                let atual = soma % 10;
+                
+                let explicacao = `Somando a coluna atual: ${vaiUm > 0 ? vaiUm + ' (que subiu) + ' : ''}${d1} + ${d2} = ${soma}.<br>`;
+                
+                vaiUm = Math.floor(soma / 10);
+                visualResultado[i] = atual;
+                
+                if (vaiUm > 0) {
+                    visualVais[i] = vaiUm;
+                    explicacao += `Escrevemos o **${atual}** embaixo e o **${vaiUm}** sobe para a próxima coluna à esquerda.`;
+                } else {
+                    explicacao += `Escrevemos o **${atual}** embaixo.`;
+                }
+
+                let tHeader = `<tr class="carry-row"><td></td>${visualVais.slice(1).map(v => `<td>${v}</td>`).join('')}</tr>`;
+                let tBody = `<tr><td></td>${arr1.map(d => `<td>${d}</td>`).join('')}</tr>
+                             <tr class="line-below"><td>+</td>${arr2.map(d => `<td>${d}</td>`).join('')}</tr>
+                             <tr><td></td>${visualResultado.map(r => `<td>${r === '' ? '' : r}</td>`).join('')}</tr>`;
+
+                let tableHtml = `<table class="math-table">${tHeader}${tBody}</table>`;
+                target.innerHTML += criarBloco(`Passo ${len - i}: Coluna Processada`, tableHtml, explicacao);
+            }
+
+            if (vaiUm > 0) {
+                let tableHtml = `<table class="math-table">
+                    <tr class="carry-row"><td></td>${visualVais.slice(1).map(v => `<td>${v}</td>`).join('')}</tr>
+                    <tr><td></td>${arr1.map(d => `<td>${d}</td>`).join('')}</tr>
+                    <tr class="line-below"><td>+</td>${arr2.map(d => `<td>${d}</td>`).join('')}</tr>
+                    <tr><td>${vaiUm}</td>${visualResultado.map(r => `<td>${r}</td>`).join('')}</tr>
+                </table>`;
+                target.innerHTML += criarBloco(`Finalizando o Último Vai Um`, tableHtml, `Como sobrou o transbordo de **${vaiUm}** na última coluna, ele cai direto na frente da resposta.`);
+            }
+        }
+
+        function gerarSubtracaoCompleta(n1, n2, target) {
+            if (n2 > n1) {
+                target.innerHTML = `<p style='color:var(--red-notebook)'>Insira o número maior primeiro para manter a estrutura tradicional.</p>`;
+                return;
+            }
+            let s1 = n1.toString();
+            let s2 = n2.toString();
+            let len = s1.length;
+            let arr1 = s1.split('').map(Number);
+            let arr2 = s2.padStart(len, '0').split('').map(Number);
+            
+            let displayArr = [...arr1];
+            let novosValores = Array(len).fill('');
+            let riscados = Array(len).fill(false);
+            let resultado = Array(len).fill('');
+
+            for (let i = len - 1; i >= 0; i--) {
+                let d1 = displayArr[i];
+                let d2 = arr2[i];
+                let exp = "";
+
+                if (d1 < d2) {
+                    exp += `${d1} é menor que ${d2}. Pegamos emprestado do vizinho da esquerda.<br>`;
+                    let j = i - 1;
+                    while (displayArr[j] === 0 && j >= 0) { j--; }
+                    
+                    displayArr[j] -= 1;
+                    riscados[j] = true;
+                    novosValores[j] = displayArr[j];
+
+                    for (let k = j + 1; k < i; k++) {
+                        displayArr[k] = 9;
+                        riscados[k] = true;
+                        novosValores[k] = 9;
+                    }
+
+                    d1 += 10;
+                    displayArr[i] = d1;
+                    riscados[i] = true;
+                    novosValores[i] = d1;
+                    exp += `O vizinho empresta 1. A coluna ganha 10 e vira **${d1}**.<br>`;
+                }
+
+                let sub = d1 - d2;
+                resultado[i] = sub;
+                exp += `Efetuamos: ${d1} - ${d2} = **${sub}**.`;
+
+                let rowTop = `<tr class="carry-row"><td></td>`;
+                for(let k=0; k<len; k++) { rowTop += `<td><span class="new-value">${novosValores[k]}</span></td>`; }
+                rowTop += `</tr>`;
+
+                let rowN1 = `<tr><td></td>`;
+                for(let k=0; k<len; k++) {
+                    let classe = riscados[k] ? 'class="borrowed"' : '';
+                    rowN1 += `<td><span ${classe}>${arr1[k]}</span></td>`;
+                }
+                rowN1 += `</tr>`;
+
+                let rowN2 = `<tr class="line-below"><td>-</td>${arr2.map(d => `<td>${d}</td>`).join('')}</tr>`;
+                let rowRes = `<tr><td></td>${resultado.map(r => `<td>${r === '' ? '' : r}</td>`).join('')}</tr>`;
+
+                let tableHtml = `<table class="math-table">${rowTop}${rowN1}${rowN2}${rowRes}</table>`;
+                target.innerHTML += criarBloco(`Subtração - Coluna ${len - i}`, tableHtml, exp);
+            }
+        }
+
+        function gerarMultiplicacaoCompleta(n1, n2, target) {
+            let s1 = n1.toString();
+            let s2 = n2.toString();
+            let arr2 = s2.split('').reverse().map(Number);
+            let parciais = [];
+            let totalLen = (n1 * n2).toString().length + 2;
+
+            let passosLog = "Multiplicamos cada dígito de baixo por todos os de cima:<br>";
+            for (let i = 0; i < arr2.length; i++) {
+                let mult = n1 * arr2[i];
+                parciais.push(mult);
+                passosLog += `• ${arr2[i]} × ${n1} = **${mult}** (Desloca ${i} casa à esquerda)<br>`;
+            }
+
+            let html = `<table class="math-table">`;
+            html += `<tr>${s1.padStart(totalLen, ' ').split('').map(c => `<td>${c === ' ' ? '' : c}</td>`).join('')}</tr>`;
+            html += `<tr class="line-below"><td style="text-align:left">×</td>${s2.padStart(totalLen - 1, ' ').split('').map(c => `<td>${c === ' ' ? '' : c}</td>`).join('')}</tr>`;
+
+            for (let i = 0; i < parciais.length; i++) {
+                let numStr = parciais[i].toString() + " ".repeat(i);
+                let padded = numStr.padStart(totalLen, ' ');
+                let classLine = (i === parciais.length - 1) ? 'class="line-below"' : '';
+                html += `<tr ${classLine}>${padded.split('').map(c => `<td>${c === ' ' ? '' : c}</td>`).join('')}</tr>`;
+            }
+
+            if (parciais.length > 1) {
+                let resStr = (n1 * n2).toString().padStart(totalLen, ' ');
+                html += `<tr>${resStr.split('').map(c => `<td>${c === ' ' ? '' : c}</td>`).join('')}</tr>`;
+            }
+            html += `</table>`;
+
+            target.innerHTML += criarBloco("Multiplicação Armada Completa", html, passosLog);
+        }
+
+        function gerarDivisaoCadernoDoZero(dividendo, divisor, target) {
+            if (divisor === 0) {
+                target.innerHTML = "<p style='color:var(--red-notebook)'>Não é possível dividir por zero!</p>";
+                return;
+            }
+
+            let sDividendo = Math.floor(dividendo).toString();
+            let divisorStr = divisor.toString();
+            let lenDiv = sDividendo.length;
+            
+            let quocienteReal = "";
+            let bufferEsquerdo = [sDividendo]; 
+            let passoContador = 1;
+
+            // Frame 0: Inicial limpo
+            let divVisualInicial = `${sDividendo} | ${divisor}\n` + " ".repeat(lenDiv) + " |---\n" + " ".repeat(lenDiv) + " | ";
+            target.innerHTML += criarBloco("Chave Escolar Inicial", `<div class="notebook-view">${divVisualInicial}</div>`, "Montamos a estrutura inicial. Avaliaremos o dividendo da esquerda para a direita.");
+
+            let index = 0;
+            let restoCorrenteStr = "";
+
+            while (index < sDividendo.length) {
+                restoCorrenteStr += sDividendo[index];
+                let nAtual = parseInt(restoCorrenteStr);
+
+                if (nAtual >= divisor) {
+                    let q = Math.floor(nAtual / divisor);
+                    let sub = q * divisor;
+                    let restoResultado = nAtual - sub;
+
+                    quocienteReal += q.toString();
+
+                    let paddingSize = index - (nAtual.toString().length - 1);
+                    if (paddingSize < 0) paddingSize = 0;
+                    let spaces = " ".repeat(paddingSize);
+
+                    bufferEsquerdo.push(spaces + "-" + sub);
+                    bufferEsquerdo.push(spaces + " ".repeat(Math.abs(nAtual.toString().length - restoResultado.toString().length)) + restoResultado);
+
+                    let render = montarStringChave(bufferEsquerdo, divisorStr, quocienteReal, lenDiv);
+                    let exp = `Análise: Formamos o valor parcial **${nAtual}**. O divisor cabe **${q}** vezes lá dentro. Subtraímos **${sub}**, gerando o resto **${restoResultado}**.`;
+                    
+                    target.innerHTML += criarBloco(`Divisão Longa - Passo ${passoContador}`, `<div class="notebook-view">${render}</div>`, exp);
+                    
+                    restoCorrenteStr = restoResultado.toString();
+                    passoContador++;
+                } else {
+                    if (quocienteReal.length > 0) {
+                        quocienteReal += "0";
+                        let render = montarStringChave(bufferEsquerdo, divisorStr, quocienteReal, lenDiv);
+                        target.innerHTML += criarBloco(`Abaixando número - Passo ${passoContador}`, `<div class="notebook-view">${render}</div>`, `O número **${nAtual}** é menor que o divisor. Adicionamos **0** ao quociente e preparamos o próximo dígito.`);
+                        passoContador++;
+                    }
+                }
+                index++;
+            }
+
+            // --- CASAS DECIMAIS (ZONA QUEBRADA) ---
+            let nRestoFinal = parseInt(restoCorrenteStr || "0");
+            if (nRestoFinal !== 0 && (dividendo / divisor) % 1 !== 0) {
+                quocienteReal += ",";
+                
+                let renderVirgula = montarStringChave(bufferEsquerdo, divisorStr, quocienteReal, lenDiv);
+                target.innerHTML += criarBloco(`Ativando Casas Decimais`, `<div class="notebook-view">${renderVirgula}</div>`, `Como o resto foi **${nRestoFinal}**, aplicamos uma vírgula no quociente para continuar dividindo os decimais.`);
+
+                let limiteCasas = 0;
+                while (nRestoFinal !== 0 && limiteCasas < 3) {
+                    let nMultiplicado = nRestoFinal * 10;
+                    let q = Math.floor(nMultiplicado / divisor);
+                    let sub = q * divisor;
+                    let novoResto = nMultiplicado - sub;
+
+                    quocienteReal += q.toString();
+                    
+                    let ultimaLinhaIndex = bufferEsquerdo.length - 1;
+                    bufferEsquerdo[ultimaLinhaIndex] = bufferEsquerdo[ultimaLinhaIndex] + "0";
+
+                    let spaces = " ".repeat(Math.max(0, lenDiv + limiteCasas));
+                    bufferEsquerdo.push(spaces + "-" + sub);
+                    bufferEsquerdo.push(spaces + novoResto);
+
+                    let renderDec = montarStringChave(bufferEsquerdo, divisorStr, quocienteReal, lenDiv);
+                    target.innerHTML += criarBloco(`Casa Decimal ${limiteCasas + 1}`, `<div class="notebook-view">${renderDec}</div>`, `Multiplicamos o resto por 10 (virando **${nMultiplicado}**). O divisor cabe **${q}** vezes nele. Subtraímos **${sub}**, restando **${novoResto}**.`);
+                    
+                    nRestoFinal = novoResto;
+                    limiteCasas++;
+                }
+            }
+        }
+
+        function montarStringChave(linhasEsquerdas, divisorStr, quocienteStr, lenDiv) {
+            let resultadoFinal = "";
+            let maxLinhas = Math.max(linhasEsquerdas.length, 3);
+
+            for (let i = 0; i < maxLinhas; i++) {
+                let esquerda = linhasEsquerdas[i] || "";
+                let esqFormatada = esquerda.padEnd(lenDiv + 2, ' ');
+
+                if (i === 0) {
+                    resultadoFinal += `${esqFormatada}| ${divisorStr}\n`;
+                } else if (i === 1) {
+                    resultadoFinal += `${esqFormatada}|---\n`;
+                } else if (i === 2) {
+                    resultadoFinal += `${esqFormatada}| ${quocienteStr}\n`;
+                } else {
+                    if(i === 3) {
+                         resultadoFinal += `${esqFormatada}  ${quocienteStr.substring(divisorStr.length)}\n`;
+                    } else {
+                         resultadoFinal += `${esqFormatada}\n`;
+                    }
+                }
+            }
+            return resultadoFinal.trimEnd();
+        }
+    </script>
+</body>
+</html>
